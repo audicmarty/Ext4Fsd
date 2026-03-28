@@ -30,14 +30,20 @@ jobs:
 
       - name: Create Directory.Build.props
         run: |
-          $platform = "${{ matrix.platform }}".ToLower()
           $version = "10.0.26100.6584"
+          # Find actual directory names (handles case differences like ARM64 vs arm64)
+          $sdkDir = (Get-ChildItem packages -Directory | Where-Object { $_.Name -like "Microsoft.Windows.SDK.CPP.$version" }).Name
+          $wdkDir = (Get-ChildItem packages -Directory | Where-Object { $_.Name -like "Microsoft.Windows.WDK.*$version" }).Name
+          $sdkProps = (Get-ChildItem "packages\$sdkDir\build" -Filter "*.props").Name
+          $wdkProps = (Get-ChildItem "packages\$wdkDir\build" -Filter "*.props").Name
+          Write-Host "SDK: packages\$sdkDir\build\$sdkProps"
+          Write-Host "WDK: packages\$wdkDir\build\$wdkProps"
           @"
-          <Project>
-            <Import Project="packages\Microsoft.Windows.SDK.CPP.$version\build\Microsoft.Windows.SDK.CPP.props" />
-            <Import Project="packages\Microsoft.Windows.WDK.$platform.$version\build\Microsoft.Windows.WDK.$platform.props" />
-          </Project>
-          "@ | Set-Content "Directory.Build.props"
+<Project>
+  <Import Project="packages\$sdkDir\build\$sdkProps" />
+  <Import Project="packages\$wdkDir\build\$wdkProps" />
+</Project>
+"@ | Set-Content "Directory.Build.props"
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
