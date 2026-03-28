@@ -86,7 +86,7 @@ jobs:
         id: vspaths
         run: |
           $vsInstall = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -products * -latest -property installationPath
-          $msvcVer = (Get-ChildItem "$vsInstall\VC\Redist\MSVC" -Directory | Sort-Object Name -Descending | Select-Object -First 1).Name
+          $msvcVer = (Get-ChildItem "$vsInstall\VC\Redist\MSVC" -Directory | Where-Object { $_.Name -match '^\d' } | Sort-Object Name -Descending | Select-Object -First 1).Name
           $msvPath = "$vsInstall\VC\Redist\MSVC\$msvcVer\x64\Microsoft.VC143.CRT"
           $mfcPath = "$vsInstall\VC\Redist\MSVC\$msvcVer\x64\Microsoft.VC143.MFC"
           echo "MSVPATH_X64=$msvPath" >> $env:GITHUB_OUTPUT
