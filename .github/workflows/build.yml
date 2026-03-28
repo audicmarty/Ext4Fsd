@@ -21,6 +21,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: packages
+          key: nuget-${{ hashFiles('packages.config') }}
+
       - name: Install WDK and SDK via NuGet
         run: nuget restore packages.config -OutputDirectory packages
 
@@ -52,6 +58,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: packages
+          key: nuget-${{ hashFiles('packages.config') }}
 
       - name: Install WDK and SDK via NuGet
         run: nuget restore packages.config -OutputDirectory packages
