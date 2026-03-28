@@ -38,12 +38,10 @@ jobs:
           $wdkProps = (Get-ChildItem "packages\$wdkDir\build" -Filter "*.props").Name
           Write-Host "SDK: packages\$sdkDir\build\$sdkProps"
           Write-Host "WDK: packages\$wdkDir\build\$wdkProps"
-          @"
-<Project>
-  <Import Project="packages\$sdkDir\build\$sdkProps" />
-  <Import Project="packages\$wdkDir\build\$wdkProps" />
-</Project>
-"@ | Set-Content "Directory.Build.props"
+          "<Project>" | Set-Content "Directory.Build.props"
+          "  <Import Project=`"packages\$sdkDir\build\$sdkProps`" />" | Add-Content "Directory.Build.props"
+          "  <Import Project=`"packages\$wdkDir\build\$wdkProps`" />" | Add-Content "Directory.Build.props"
+          "</Project>" | Add-Content "Directory.Build.props"
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
