@@ -98,6 +98,7 @@ jobs:
         run: |
           cd Setup
           makensis `
+            /DX64_ONLY `
             /DSYSPATH_X64="..\Ext4Fsd\Release\x64" `
             "/DMSVPATH_X64=${{ steps.vspaths.outputs.MSVPATH_X64 }}" `
             "/DMFCPATH_X64=${{ steps.vspaths.outputs.MFCPATH_X64 }}" `

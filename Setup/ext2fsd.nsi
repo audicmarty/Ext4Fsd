@@ -119,12 +119,14 @@ IfFileExists $WINDIR\SysWOW64\*.* 0 else
     Goto endif
 else:
     ; 32-bit.
+!ifndef X64_ONLY
     File "${MSVPATH_X86}\${VCDLL_X86}.dll"
     File "${MFCPATH_X86}\${MFCDLL}.dll"
     File "${MGRPATH_X86}\Ext2Mgr.exe"
     File "${SRVPATH_X86}\Ext2Srv.exe"
 ;    File "${SYSPATH_X86}\${DRIVERNAME}.pdb"
     File "${SYSPATH_X86}\${DRIVERNAME}.sys"
+!endif
 endif:
 
 File "..\ext4fsd\${DRIVERNAME}.inf"
