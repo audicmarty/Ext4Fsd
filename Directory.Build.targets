@@ -1,0 +1,5 @@
+<Project>
+  <!-- ApiValidator.exe is not included in NuGet WDK packages (only in full WDK installs).
+       Override the target to a no-op so the build succeeds in CI. -->
+  <Target Name="ApiValidator" />
+</Project>
