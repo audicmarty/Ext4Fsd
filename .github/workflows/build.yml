@@ -44,3 +44,56 @@ jobs:
             **/*.inf
             **/*.pdb
           if-no-files-found: warn
+
+  installer:
+    runs-on: windows-2022
+    needs: build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install WDK and SDK via NuGet
+        run: nuget restore packages.config -OutputDirectory packages
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build x64 Release
+        run: |
+          msbuild Ext4Fsd.sln `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /p:WindowsTargetPlatformVersion=10.0.26100.0 `
+            /m /v:minimal
+
+      - name: Install NSIS
+        run: choco install nsis --no-progress -y
+
+      - name: Find VS Redist paths
+        id: vspaths
+        run: |
+          $vsInstall = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -products * -latest -property installationPath
+          $msvcVer = (Get-ChildItem "$vsInstall\VC\Redist\MSVC" -Directory | Sort-Object Name -Descending | Select-Object -First 1).Name
+          $msvPath = "$vsInstall\VC\Redist\MSVC\$msvcVer\x64\Microsoft.VC143.CRT"
+          $mfcPath = "$vsInstall\VC\Redist\MSVC\$msvcVer\x64\Microsoft.VC143.MFC"
+          echo "MSVPATH_X64=$msvPath" >> $env:GITHUB_OUTPUT
+          echo "MFCPATH_X64=$mfcPath" >> $env:GITHUB_OUTPUT
+          Write-Host "MSVC redist: $msvPath"
+          Write-Host "MFC redist:  $mfcPath"
+
+      - name: Build installer
+        run: |
+          cd Setup
+          makensis `
+            /DSYSPATH_X64="..\Ext4Fsd\Release\x64" `
+            "/DMSVPATH_X64=${{ steps.vspaths.outputs.MSVPATH_X64 }}" `
+            "/DMFCPATH_X64=${{ steps.vspaths.outputs.MFCPATH_X64 }}" `
+            ext2fsd.nsi
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ext2Fsd-setup
+          path: Setup/Ext2Fsd-setup.exe
+          if-no-files-found: error
