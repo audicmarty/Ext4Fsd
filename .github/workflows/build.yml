@@ -31,17 +31,33 @@ jobs:
       - name: Create Directory.Build.props
         run: |
           $version = "10.0.26100.6584"
-          # Find actual directory names (handles case differences like ARM64 vs arm64)
           $sdkDir = (Get-ChildItem packages -Directory | Where-Object { $_.Name -like "Microsoft.Windows.SDK.CPP.$version" }).Name
           $wdkDir = (Get-ChildItem packages -Directory | Where-Object { $_.Name -like "Microsoft.Windows.WDK.*$version" }).Name
-          $sdkProps = (Get-ChildItem "packages\$sdkDir\build" -Filter "*.props").Name
-          $wdkProps = (Get-ChildItem "packages\$wdkDir\build" -Filter "*.props").Name
-          Write-Host "SDK: packages\$sdkDir\build\$sdkProps"
-          Write-Host "WDK: packages\$wdkDir\build\$wdkProps"
-          "<Project>" | Set-Content "Directory.Build.props"
-          "  <Import Project=`"packages\$sdkDir\build\$sdkProps`" />" | Add-Content "Directory.Build.props"
-          "  <Import Project=`"packages\$wdkDir\build\$wdkProps`" />" | Add-Content "Directory.Build.props"
-          "</Project>" | Add-Content "Directory.Build.props"
+          Write-Host "SDK dir: $sdkDir"
+          Write-Host "WDK dir: $wdkDir"
+          Write-Host "=== WDK package contents ==="
+          Get-ChildItem "packages\$wdkDir" -Recurse | Select-Object -ExpandProperty FullName
+          # SDK: hardcode known props filename (avoid getting multiple files)
+          $sdkPropsPath = "packages\$sdkDir\build\Microsoft.Windows.SDK.cpp.props"
+          # WDK: search recursively for a .props file
+          $wdkPropsItem = Get-ChildItem "packages\$wdkDir" -Filter "*.props" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($wdkPropsItem) {
+            $wdkPropsPath = $wdkPropsItem.FullName.Replace((Get-Location).Path + "\", "")
+            Write-Host "WDK props found: $wdkPropsPath"
+            "<Project>" | Set-Content "Directory.Build.props"
+            "  <Import Project=`"$sdkPropsPath`" />" | Add-Content "Directory.Build.props"
+            "  <Import Project=`"$wdkPropsPath`" />" | Add-Content "Directory.Build.props"
+            "</Project>" | Add-Content "Directory.Build.props"
+          } else {
+            Write-Host "No WDK .props found - setting WDKContentRoot directly"
+            $wdkRoot = "packages\$wdkDir\"
+            "<Project>" | Set-Content "Directory.Build.props"
+            "  <Import Project=`"$sdkPropsPath`" />" | Add-Content "Directory.Build.props"
+            "  <PropertyGroup><WDKContentRoot>$((Get-Location).Path)\$wdkRoot</WDKContentRoot></PropertyGroup>" | Add-Content "Directory.Build.props"
+            "</Project>" | Add-Content "Directory.Build.props"
+          }
+          Write-Host "=== Directory.Build.props ==="
+          Get-Content "Directory.Build.props"
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
